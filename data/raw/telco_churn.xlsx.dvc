@@ -1,0 +1,5 @@
+outs:
+- md5: c05a3dc4c7c29d719d95afba8a212863
+  size: 622126
+  hash: md5
+  path: telco_churn.xlsx
