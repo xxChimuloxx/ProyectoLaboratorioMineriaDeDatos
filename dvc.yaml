@@ -1,7 +1,11 @@
 stages:
   data_prep:
-    cmd: \ -d src/data_prep.py \ -d data/raw/telco_churn.xlsx \ -o 
-      data/processed/telco_clean.csv \ python src/data_prep.py
+    cmd: python src/data_prep.py
+    deps:
+    - data/raw/telco_churn.xlsx
+    - src/data_prep.py
+    outs:
+    - data/processed/telco_clean.csv
   train:
     cmd: python src/train.py
     deps:
