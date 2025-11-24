@@ -1,0 +1,4 @@
+stages:
+  data_prep:
+    cmd: \ -d src/data_prep.py \ -d data/raw/telco_churn.xlsx \ -o 
+      data/processed/telco_clean.csv \ python src/data_prep.py
