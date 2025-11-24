@@ -79,6 +79,7 @@ def save_outputs(model, metrics):
 
 def main():
     print("Entrenando modelo...")
+    print("Entrenamiento iniciado desde rama experimental...")
 
     params = load_params()
     df = load_clean_data()
