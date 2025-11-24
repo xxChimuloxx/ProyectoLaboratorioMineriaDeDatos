@@ -29,8 +29,8 @@ stages:
       size: 90
     - path: src/train.py
       hash: md5
-      md5: d7dd668f4a843f5bb4152cc253290eca
-      size: 2101
+      md5: 2231df4103873ee73c83978c928dd2ed
+      size: 2165
     outs:
     - path: metrics.json
       hash: md5
@@ -40,3 +40,27 @@ stages:
       hash: md5
       md5: 07d509aafa2e0b98f09bbb0599f3cb01
       size: 321370
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: data/processed/telco_clean.csv
+      hash: md5
+      md5: ac40be7770ac4b2e22a43d2ec75a2bad
+      size: 883371
+    - path: models/model.pkl
+      hash: md5
+      md5: 07d509aafa2e0b98f09bbb0599f3cb01
+      size: 321370
+    - path: src/evaluate.py
+      hash: md5
+      md5: fd24e6675b1f005613418577cc82b4e2
+      size: 2945
+    outs:
+    - path: metrics_extended.json
+      hash: md5
+      md5: fbd9339f915a33923ca9c506acb43761
+      size: 173
+    - path: reports/roc_curve.png
+      hash: md5
+      md5: fea77a61e6e7f03dbac9438d2cde5934
+      size: 29955

@@ -17,3 +17,14 @@ stages:
     metrics:
     - metrics.json:
         cache: false
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - data/processed/telco_clean.csv
+    - models/model.pkl
+    - src/evaluate.py
+    outs:
+    - reports/roc_curve.png
+    metrics:
+    - metrics_extended.json:
+        cache: false
