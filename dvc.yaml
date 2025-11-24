@@ -2,3 +2,14 @@ stages:
   data_prep:
     cmd: \ -d src/data_prep.py \ -d data/raw/telco_churn.xlsx \ -o 
       data/processed/telco_clean.csv \ python src/data_prep.py
+  train:
+    cmd: python src/train.py
+    deps:
+    - data/processed/telco_clean.csv
+    - params.yaml
+    - src/train.py
+    outs:
+    - models/model.pkl
+    metrics:
+    - metrics.json:
+        cache: false
