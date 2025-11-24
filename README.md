@@ -88,7 +88,7 @@ dvc pull
 dvc repro
 ``` 
 
-## 🔍 Experimentos (DVC Experiments)
+## Experimentos (DVC Experiments)
 
 Se realizaron múltiples experimentos variando hiperparámetros con:
 ``` python
@@ -112,7 +112,7 @@ Aplicación del mejor experimento:
 dvc exp apply <ID>
 ``` 
 
-## 🔁 Integración Continua (CI/CD)
+## Integración Continua (CI/CD)
 
 Se implementó un workflow en GitHub Actions:
 > .github/workflows/ci.yaml
@@ -339,39 +339,75 @@ Esto indica que el modelo estaba intentando ajustar patrones que no aportaban al
 
 ## Justificación en detalle del Modelo Final Elegido
 
-El modelo final seleccionado corresponde al experimento con **regularización moderada (`C = 0.5`)**, debido a una combinación de factores técnicos y prácticos relevantes para su futuro despliegue.
+La justificación del modelo final tiene dos niveles: por un lado, la elección del **tipo de modelo de Machine Learning** (algoritmo), y por otro, la elección de la **configuración específica** de ese modelo (los hiperparámetros que definen su comportamiento).
 
-### **1. Superioridad en métricas prioritarias**
-Aunque la mejora absoluta puede parecer pequeña, en problemas de churn —donde la clase positiva es minoritaria y estratégica— incluso incrementos leves en F1-score reflejan un mejor desempeño real en la identificación de clientes que se darán de baja.
+### 1. Justificación del tipo de modelo: Regresión Logística
 
-### **2. Estabilidad matemática del modelo**
-El modelo:
-- no presentó warnings de convergencia,
-- no requirió aumentos innecesarios de iteraciones,
-- mantuvo coherencia entre accuracy y F1.
+Para este problema de churn se optó por utilizar **Regresión Logística** como modelo base. Las razones principales son:
 
-Esto lo vuelve más confiable como *artefacto productivo*.
+- **Naturaleza binaria de la variable objetivo:** el churn se formula naturalmente como un problema de clasificación binaria (cliente se da de baja = 1, cliente permanece = 0), para lo cual la Regresión Logística es un modelo clásico, sólido y ampliamente validado.
+- **Interpretabilidad:** a diferencia de modelos más complejos (como Random Forest o Gradient Boosting), la Regresión Logística permite interpretar los coeficientes de manera más directa. Esto es especialmente útil en contextos de negocio, donde interesa entender qué variables incrementan o reducen el riesgo de churn.
+- **Simplicidad y robustez como baseline:** en un enfoque MLOps, es una buena práctica comenzar con un modelo lineal sencillo y estable, que sirva como baseline. En caso de ser necesario, modelos más complejos pueden introducirse después, pero partiendo de una referencia clara.
+- **Costo computacional bajo:** la Regresión Logística es liviana y rápida de entrenar y ejecutar, lo que facilita tanto la iteración de experimentos como el eventual despliegue en producción (ya sea en una API en tiempo real, como servicio batch o embebido en otros sistemas).
+- **Buena compatibilidad con one-hot encoding:** dado que el dataset incluye múltiples variables categóricas (región, tipo de contrato, método de pago, etc.), la combinación de one-hot encoding + Regresión Logística es una solución estándar y efectiva.
 
-### **3. Robustez frente al ruido**
-En modelos lineales como la regressión logística:
-- la regularización controla la magnitud de los coeficientes,
-- coeficientes más pequeños implican un modelo más estable,
-- estabilidad implica mayor resiliencia ante cambios sutiles en la distribución del dataset.
-
-En entornos reales (como TelcoVision), la distribución de datos cambia mes a mes. Un modelo con C=0.5 responde mejor a estos cambios.
-
-### **4. Adecuación al uso en un pipeline productivo**
-El modelo final:
-- es liviano y rápido de ejecutar,
-- tiene baja complejidad,
-- se versiona de forma simple,
-- es reproducible con DVC en cualquier entorno.
-
-Esto lo convierte en un candidato ideal para despliegue en servicios REST, dashboards o pipelines batch.
+Por estas razones, la Regresión Logística resulta un modelo coherente con las necesidades de TelcoVision: equilibrio entre capacidad predictiva, interpretabilidad y facilidad de despliegue.
 
 ---
 
-## 🚀 Reflexión Extendida sobre el Despliegue en Producción
+### 2. Justificación de la configuración final (experimento con C = 0.5)
+
+Dentro de la familia de modelos de Regresión Logística, el modelo final seleccionado corresponde al experimento con **regularización moderada** (`C = 0.5`). Esta elección se basa en una combinación de factores técnicos y prácticos relacionados con el desempeño y la estabilidad del modelo.
+
+#### 2.1 Superioridad en métricas prioritarias
+
+Aunque la mejora absoluta respecto del baseline puede parecer pequeña, en problemas de churn —donde la clase positiva es minoritaria y estratégica— incluso incrementos modestos en el **F1-score** representan una mejor identificación de los clientes que efectivamente se darán de baja.
+
+En las comparaciones realizadas se observó que:
+
+- El experimento con `C = 0.5` obtuvo el **mejor F1-score**,
+- Mantuvo una **accuracy igual o superior** al modelo baseline.
+
+Dado que el costo de no detectar a un cliente en riesgo suele ser alto (pérdida de ingresos, costo de adquisición de un nuevo cliente, etc.), se priorizó un modelo que mejore la capacidad de detección de la clase positiva sin sacrificar robustez general.
+
+#### 2.2 Estabilidad matemática del modelo
+
+El modelo con `C = 0.5` se comportó de forma estable:
+
+- No presentó **warnings de convergencia**.
+- No requirió aumentar de manera excesiva el número de iteraciones (`max_iter`).
+- Mostró una relación coherente entre accuracy y F1-score.
+
+En contraste, el experimento con `C = 2.0` y `max_iter = 300` exigió más iteraciones, mostró warnings de convergencia y terminó ofreciendo métricas ligeramente peores. Esto sugiere que una regularización demasiado débil hacía al modelo más sensible al ruido, sin aportar beneficios reales en desempeño.
+
+#### 2.3 Robustez frente al ruido y cambios de distribución
+
+En modelos lineales como la Regresión Logística:
+
+- La **regularización** controla la magnitud de los coeficientes.
+- Coeficientes más pequeños implican un modelo más estable y menos propenso a sobreajuste.
+- Esa estabilidad mejora la resistencia ante cambios sutiles en la distribución de los datos.
+
+En un entorno real como TelcoVision, la distribución de los clientes cambia con el tiempo (nuevos planes, promociones, cambios económicos, etc.). Un modelo con regularización moderada (`C = 0.5`) tiende a ser más robusto frente a estos cambios que un modelo poco regularizado.
+
+#### 2.4 Adecuación al uso en un pipeline productivo
+
+Finalmente, el modelo seleccionado presenta ventajas operativas:
+
+- Es **liviano y rápido** de ejecutar, tanto en entornos batch como en APIs en tiempo real.
+- Tiene **baja complejidad**, lo que facilita su mantenimiento, explicabilidad y auditoría.
+- Se integra de forma natural en el pipeline versionado con **DVC**, lo que permite reproducir exactamente la versión elegida en cualquier entorno (local, CI/CD, producción).
+
+Por todo lo anterior, la Regresión Logística con `C = 0.5` se consideró el **modelo final más adecuado**, combinando:
+- buen desempeño en métricas clave,
+- estabilidad matemática,
+- robustez frente al ruido,
+- y viabilidad de despliegue en un entorno de MLOps.
+
+
+---
+
+## Reflexión Extendida sobre el Despliegue en Producción
 
 El despliegue de un modelo de Machine Learning no consiste únicamente en poner en funcionamiento un archivo `model.pkl`. Implica trasladar todo el pipeline —desde la preparación de datos hasta el scoring final— a un entorno capaz de operar con altos niveles de estabilidad, trazabilidad, seguridad y escalabilidad. En organizaciones como TelcoVision, este proceso debe alinearse con prácticas de MLOps, garantizando que el modelo no solo funcione hoy, sino que continúe funcionando de manera confiable a medida que cambian los datos, el negocio y la infraestructura.
 
@@ -530,8 +566,6 @@ O incluso desde interfaz web en DagsHub.
 Este nivel de trazabilidad es esencial en telecomunicaciones, donde una mala predicción puede implicar pérdidas económicas o campañas erróneas.
 
 ### 8. Infraestructura de Despliegue Recomendada
-
-Dependiendo de los recursos de TelcoVision, se pueden considerar:
 
 > Opción A – Contenedores (Docker + Kubernetes)
 
